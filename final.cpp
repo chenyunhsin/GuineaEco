@@ -10,8 +10,8 @@
 
 using namespace std;
 
-const float TIMOTHY_GROWS_PER_MONTH =     8.0;    //inches
-const float ONE_GUINEA_EATS_PER_MONTH =   0.5;
+const float GRAIN_GROWS_PER_MONTH =     8.0;    //inches
+const float ONE_DEER_EATS_PER_MONTH =   0.5;
 
 const float AVG_PRECIP_PER_MONTH =      6.0;
 const float AMP_PRECIP_PER_MONTH =      6.0;
@@ -24,7 +24,7 @@ const float RANDOM_TEMP =               10.0;   //Farhrenheit
 const float MIDTEMP =                   40.0;
 const float MIDPRECIP =                 10.0;
 
-const int LOOP_NUM =                    1e6;
+const int LOOP_NUM =                    1e8;
 
 int  NowYear;           // 2014 - 2019
 int  NowMonth;          // 0 - 11
@@ -55,7 +55,9 @@ float Ranf(float, float, unsigned int*);
 int
 main(int argc, char* argv[])
 {
-    const clock_t begin_time = clock();
+    time_t begin, end;
+    begin = time(NULL);
+    cout << begin << endl;
 
     //initial values
     NowNumDeer = 1;
@@ -81,10 +83,10 @@ main(int argc, char* argv[])
             Grain();
         }
         
-         #pragma omp section
-         {
-             Pests();
-         }
+        // #pragma omp section
+        // {
+        //     Pests();
+        // }
         
         #pragma omp section
         {
@@ -113,8 +115,10 @@ main(int argc, char* argv[])
 
     #endif
 
-    cout << "Elapse time: " << float(clock() - begin_time) / CLOCKS_PER_SEC << endl;
-
+    end = time(NULL);
+    cout << end << endl;
+    //cout << "Elapse time: " << float(end - begin) / CLOCKS_PER_SEC << endl;
+    cout << "Elapse time: " << (end - begin) << endl;
 
     return 0;
 }
@@ -247,14 +251,14 @@ getGrainHeight()
     float tempFactor = expf(-pow((NowTemp - MIDTEMP)/10, 2));
     float precipFactor = expf(-pow((NowPrecip - MIDPRECIP)/10, 2));
     
-    nextGrainHeight += tempFactor * precipFactor * TIMOTHY_GROWS_PER_MONTH;
-    nextGrainHeight -= (float)NowNumDeer * ONE_GUINEA_EATS_PER_MONTH;
+    nextGrainHeight += tempFactor * precipFactor * GRAIN_GROWS_PER_MONTH;
+    nextGrainHeight -= (float)NowNumDeer * ONE_DEER_EATS_PER_MONTH;
     nextGrainHeight *= (1 - PestsRate);
     
     if (nextGrainHeight < 0.0) nextGrainHeight = 0.0;
 
     int test;
-    for(int i = 0; i < LOOP_NUM/100; i++)
+    for(int i = 0; i < LOOP_NUM; i++)
     {
         int j = i;
     }
@@ -274,7 +278,7 @@ getPestsDamage()
         return 0.;
 
     int test;
-    for(int i = 0; i < LOOP_NUM/2; i++)
+    for(int i = 0; i < LOOP_NUM; i++)
     {
         int j = i;
     }
@@ -343,3 +347,4 @@ printState()
     cout << (int)(PestsRate*100) << "\n";
     
 }
+
