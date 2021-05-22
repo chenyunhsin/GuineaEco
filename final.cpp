@@ -6,7 +6,7 @@
 #include <omp.h>
 #include <ctime>
 
-#define SERIAL
+//#define SERIAL
 
 using namespace std;
 
