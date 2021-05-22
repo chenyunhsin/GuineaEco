@@ -63,14 +63,14 @@ main(int argc, char* argv[])
     NowNumDeer = 1;
     NowHeight =  1.;
     NowMonth =    0;
-    NowYear  = 2014;
+    NowYear  = 2020;
     PestsRate = 0.;
 
     
     #ifndef SERIAL
     getTempPrecip();
 
-    omp_set_num_threads(3);
+    omp_set_num_threads(4);
     #pragma omp parallel sections
     {
         #pragma omp section
@@ -83,10 +83,10 @@ main(int argc, char* argv[])
             Grain();
         }
         
-        // #pragma omp section
-        // {
-        //     Pests();
-        // }
+         #pragma omp section
+         {
+             Pests();
+         }
         
         #pragma omp section
         {
@@ -99,7 +99,7 @@ main(int argc, char* argv[])
     #ifdef SERIAL
     getTempPrecip();
 
-    while(NowYear <=  2020)
+    while(NowYear <=  2021)
     {
         int nextNumDeer = getDeerGrowth();
         NowNumDeer = nextNumDeer;
@@ -126,7 +126,7 @@ main(int argc, char* argv[])
 void
 Watcher()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2021 )
     {
         int thread;
         #ifndef SERIAL
@@ -138,7 +138,7 @@ Watcher()
         //printf("Watcher: %d\n", thread);
         
         // DoneAssigning barrier:
-        #pragma omp barrier
+      //  #pragma omp barrier
         
         // Print results
         printState();
@@ -157,7 +157,7 @@ Watcher()
 void
 GrainDeer()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2021 )
     {
         int thread;
         #ifndef SERIAL
@@ -176,15 +176,16 @@ GrainDeer()
         #pragma omp barrier
         
         
+
         // DonePrinting barrier:
-        #pragma omp barrier
+//        #pragma omp barrier
     }
 }
 
 void
 Grain()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2021 )
     {
         int thread;
         #ifndef SERIAL
@@ -203,14 +204,14 @@ Grain()
         #pragma omp barrier
         
         // DonePrinting barrier:
-        #pragma omp barrier
+  //      #pragma omp barrier
     }
 }
 
 void
 Pests()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2021 )
     {
         int thread;
         #ifndef SERIAL
@@ -229,7 +230,7 @@ Pests()
         #pragma omp barrier
         
         // DonePrinting barrier:
-        #pragma omp barrier
+    //    #pragma omp barrier
     }
 }
 
@@ -256,12 +257,23 @@ getGrainHeight()
     nextGrainHeight *= (1 - PestsRate);
     
     if (nextGrainHeight < 0.0) nextGrainHeight = 0.0;
-    srand(time(NULL));
-    int x;
-    x=rand();
+  //  srand( time(NULL) );
+//    int x = rand();
+   
+// int test;
+    srand( time(NULL) );
+    int x = rand();
     for(int i = 0; i < LOOP_NUM; i++)
     {
-        x%=2;
+	  //  srand( time(NULL) );
+	   // int x = rand();
+	   
+	    if(x%2){
+	    	nextGrainHeight+=x%2/1e8*2;
+	    }else{
+	    nextGrainHeight-=x%2/1e8/2;
+	    }
+
     }
     
     return nextGrainHeight;
@@ -270,19 +282,27 @@ getGrainHeight()
 float
 getPestsDamage()
 {
+	
+	srand(time(NULL));
+//float r = (float) rand(); 
+	
+	int x=rand();
+	float r = (float) rand();      // 0 - RAND_MAX
+/*	for(int i = 0; i < 1000000; i++){
+		r =rand();     // 0 - RAND_MAX
+	}*/
     if((NowMonth >=3 && NowMonth <= 8) || NowTemp >= 50)
-    {
-        float r = (float) rand();      // 0 - RAND_MAX
+    {	
+       		 r = (float) rand();      // 0 - RAND_MAX
+    	
         return  r / (float)RAND_MAX/ 2  + (NowMonth - 2)/12;
     }
     else
         return 0.;
-/*
-    int test;
-    for(int i = 0; i < LOOP_NUM; i++)
-    {
-        int j = i;
-    }*/
+
+    //int test;
+    
+    
     
 }
 
@@ -298,17 +318,42 @@ getDeerGrowth()
         nextNumDeer++;
 
     int test;
+    srand( time(NULL) );
+        int x = rand();
+    
     for(int i = 0; i < LOOP_NUM; i++)
     {
-        int j = i;
+        
+	
+	if(x%2){
+		nextNumDeer +=((rand() % 3) +1) /1e8*2;
+	}else{
+		nextNumDeer -=((rand() % 3) +1) /1e8/2;
+	}
+  
     }
-    
+    if(nextNumDeer<0){nextNumDeer=0;}
+    //cout<<"test"<<nextNumDeer<<endl;
     return nextNumDeer;
 }
 
 void
 getTempPrecip()
 {
+	srand( time(NULL) );
+        int x = rand();
+/*
+    for(int i = 0; i < LOOP_NUM; i++)
+    {
+
+
+        if(x%2){
+                x +=((rand() % 3) +1) /1e8*2;
+        }else{
+                x -=((rand() % 3) +1) /1e8/2;
+        }
+
+    }*/
     unsigned int seed = NowYear;
     float ang = (  30.0*(float)NowMonth + 15.0  ) * ( M_PI / 180.0 );
     
@@ -333,10 +378,10 @@ void
 printState()
 {
     
-    if (NowYear == 2014 && NowMonth == 0) {
+  //  if (NowYear == 2016 && NowMonth == 0) {
         cout << "\tYEAR\tMON\tTEMP\tPRECIP\tGRAIN\tDEER\tPESTS" << "\n";
-    }
-    int index = (NowYear % 2013);
+   // }
+    int index = (NowYear % 2015);
     int step = index + NowMonth + (13 * (index-1));
     cout << step << "\t";
     cout << NowYear << "\t";
@@ -348,3 +393,4 @@ printState()
     cout << (int)(PestsRate*100) << "\n";
     
 }
+
