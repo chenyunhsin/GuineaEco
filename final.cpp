@@ -10,8 +10,8 @@
 
 using namespace std;
 
-const float GRAIN_GROWS_PER_MONTH =     8.0;    //inches
-const float ONE_DEER_EATS_PER_MONTH =   0.5;
+const float TIMOTHY_GROWS_PER_MONTH =     8.0;    //inches
+const float ONE_GUINEA_EATS_PER_MONTH =   0.5;
 
 const float AVG_PRECIP_PER_MONTH =      6.0;
 const float AMP_PRECIP_PER_MONTH =      6.0;
@@ -25,27 +25,27 @@ const float MIDTEMP =                   40.0;
 const float MIDPRECIP =                 10.0;
 
 const int LOOP_NUM =                    1e8;
-
-int  NowYear;           // 2014 - 2019
+const int TARGET_YEAR= 2022;
+int  NowYear;           // 2014 - 2021
 int  NowMonth;          // 0 - 11
 
 float NowPrecip;        // inches of rain per month
 float NowTemp;          // temperature this month
 float NowHeight;        // grain height in inches
-int  NowNumDeer;        // current deer population
+int  NowNumGuinea;        // current guinea population
 float PestsRate;
 
 
-void GrainDeer();
-void Grain();
+void TimothyGuinea();
+void Timothy();
 void Watcher();
 void Pests();
 
 void incMonth();
 void printState();
 void getTempPrecip();
-float getGrainHeight();
-int getDeerGrowth();
+float getTimothyHeight();
+int getGuineaGrowth();
 float getPestsDamage();
 
 float Ranf(float, float, unsigned int*);
@@ -60,33 +60,33 @@ main(int argc, char* argv[])
     cout << begin << endl;
 
     //initial values
-    NowNumDeer = 1;
+    NowNumGuinea = 6;
     NowHeight =  1.;
     NowMonth =    0;
-    NowYear  = 2014;
+    NowYear  = 2021;
     PestsRate = 0.;
 
     
     #ifndef SERIAL
     getTempPrecip();
 
-    omp_set_num_threads(3);
+    omp_set_num_threads(4);
     #pragma omp parallel sections
     {
         #pragma omp section
         {
-            GrainDeer();
+            TimothyGuinea();
         }
         
         #pragma omp section
         {
-            Grain();
+            Timothy();
         }
         
-        // #pragma omp section
-        // {
-        //     Pests();
-        // }
+        #pragma omp section
+        {
+             Pests();
+         }
         
         #pragma omp section
         {
@@ -99,12 +99,12 @@ main(int argc, char* argv[])
     #ifdef SERIAL
     getTempPrecip();
 
-    while(NowYear <=  2020)
+    while(NowYear <=  TARGET_YEAR)
     {
-        int nextNumDeer = getDeerGrowth();
-        NowNumDeer = nextNumDeer;
-        float nextGrainHeight = getGrainHeight();
-        NowHeight = nextGrainHeight;
+        int nextNumDeer = getGuineaGrowth();
+        NowNumGuinea = nextNumDeer;
+        float nextTimothyHeight = getTimothyHeight();
+        NowHeight = nextTimothyHeight;
         float nextPestRate = getPestsDamage();
         PestsRate = nextPestRate;
         printState();
@@ -126,7 +126,7 @@ main(int argc, char* argv[])
 void
 Watcher()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= TARGET_YEAR )
     {
         int thread;
         #ifndef SERIAL
@@ -155,22 +155,22 @@ Watcher()
 }
 
 void
-GrainDeer()
+TimothyGuinea()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2022 )
     {
         int thread;
         #ifndef SERIAL
         thread = omp_get_thread_num();
         #endif
 
-        int nextNumDeer = getDeerGrowth();
+        int nextNumDeer = getGuineaGrowth();
         //printf("Deer: %d\n", thread);
 
         // DoneComputing barrier:
         #pragma omp barrier
         
-        NowNumDeer = nextNumDeer;
+        NowNumGuinea = nextNumDeer;
         
         // DoneAssigning barrier:
         #pragma omp barrier
@@ -182,22 +182,22 @@ GrainDeer()
 }
 
 void
-Grain()
+Timothy()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2022 )
     {
         int thread;
         #ifndef SERIAL
         thread = omp_get_thread_num();
         #endif
 
-        float nextGrainHeight = getGrainHeight();
-        //printf("Grain: %d\n", thread);
+        float nextTimothyHeight = getTimothyHeight();
+        //printf("Timothy: %d\n", thread);
 
         // DoneComputing barrier:
         #pragma omp barrier
         
-        NowHeight = nextGrainHeight;
+        NowHeight = nextTimothyHeight;
         
         // DoneAssigning barrier:
         #pragma omp barrier
@@ -210,7 +210,7 @@ Grain()
 void
 Pests()
 {
-    while( NowYear <= 2020 )
+    while( NowYear <= 2022 )
     {
         int thread;
         #ifndef SERIAL
@@ -244,18 +244,18 @@ incMonth()
 }
 
 float
-getGrainHeight()
+getTimothyHeight()
 {
-    float nextGrainHeight = NowHeight;
+    float nextTimothyHeight = NowHeight;
     
     float tempFactor = expf(-pow((NowTemp - MIDTEMP)/10, 2));
     float precipFactor = expf(-pow((NowPrecip - MIDPRECIP)/10, 2));
     
-    nextGrainHeight += tempFactor * precipFactor * GRAIN_GROWS_PER_MONTH;
-    nextGrainHeight -= (float)NowNumDeer * ONE_DEER_EATS_PER_MONTH;
-    nextGrainHeight *= (1 - PestsRate);
+    nextTimothyHeight += tempFactor * precipFactor * TIMOTHY_GROWS_PER_MONTH;
+    nextTimothyHeight -= (float)NowNumGuinea * ONE_GUINEA_EATS_PER_MONTH;
+    nextTimothyHeight *= (1 - PestsRate);
     
-    if (nextGrainHeight < 0.0) nextGrainHeight = 0.0;
+    if (nextTimothyHeight < 0.0) nextTimothyHeight = 0.0;
     srand(time(NULL));
     int x;
     x=rand();
@@ -264,33 +264,38 @@ getGrainHeight()
         x%=2;
     }
     
-    return nextGrainHeight;
+    return nextTimothyHeight;
 }
 
 float
 getPestsDamage()
 {
+    int test;
+    float r = (float)rand();
+    for(int i = 0; i < LOOP_NUM; i++)
+    {
+        test=i/2;
+        if(test==0){
+                r-=test;
+        }else{
+                continue;
+        }
+    }	
     if((NowMonth >=3 && NowMonth <= 8) || NowTemp >= 50)
     {
-        float r = (float) rand();      // 0 - RAND_MAX
+        r = (float) rand();      // 0 - RAND_MAX
         return  r / (float)RAND_MAX/ 2  + (NowMonth - 2)/12;
     }
     else
         return 0.;
-/*
-    int test;
-    for(int i = 0; i < LOOP_NUM; i++)
-    {
-        int j = i;
-    }*/
     
 }
 
 
 int
-getDeerGrowth()
+getGuineaGrowth()
 {
-    int nextNumDeer = NowNumDeer;
+    int nextNumDeer = NowNumGuinea;
     float height = NowHeight;
     if(nextNumDeer > height)
         nextNumDeer--;
@@ -300,7 +305,12 @@ getDeerGrowth()
     int test;
     for(int i = 0; i < LOOP_NUM; i++)
     {
-        int j = i;
+        test=i/2;
+	if(test==0){
+		nextNumDeer+=test;
+	}else{
+		continue;
+	}
     }
     
     return nextNumDeer;
@@ -314,6 +324,17 @@ getTempPrecip()
     
     float temp = AVG_TEMP - AMP_TEMP * cos( ang );
     NowTemp = temp + Ranf( -RANDOM_TEMP, RANDOM_TEMP, &seed );
+    
+    int test;
+    for(int i = 0; i < LOOP_NUM; i++)
+    {
+        test=i/2;
+        if(test==0){
+                NowTemp+=test;
+        }else{
+                continue;
+        }
+    }
     
     float precip = AVG_PRECIP_PER_MONTH + AMP_PRECIP_PER_MONTH * sin( ang );
     NowPrecip = precip + Ranf( -RANDOM_PRECIP, RANDOM_PRECIP, &seed );
@@ -333,10 +354,10 @@ void
 printState()
 {
     
-    if (NowYear == 2014 && NowMonth == 0) {
-        cout << "\tYEAR\tMON\tTEMP\tPRECIP\tGRAIN\tDEER\tPESTS" << "\n";
-    }
-    int index = (NowYear % 2013);
+   
+    cout << "\tYEAR\tMON\tTEMP\tPRECIP\tTIMOTHY\tGUINEA\tPESTS" << "\n";
+  
+    int index = (NowYear % (TARGET_YEAR-2));
     int step = index + NowMonth + (13 * (index-1));
     cout << step << "\t";
     cout << NowYear << "\t";
@@ -344,7 +365,7 @@ printState()
     cout << fixed << setprecision(4) << (5.0/9.0)*(NowTemp-32) << "\t";
     cout << (NowPrecip*2.54) << "\t";
     cout << (NowHeight*2.54) << "\t";
-    cout << NowNumDeer << "\t";
+    cout << NowNumGuinea << "\t";
     cout << (int)(PestsRate*100) << "\n";
     
 }
